@@ -3,6 +3,7 @@ name: Monitor Kubernetes Pods
 on:
   schedule:
     - cron: '*/30 * * * *' # Запуск каждые 30 минут
+  workflow_dispatch: # Запуск вручную
 
 jobs:
   check-pods:
