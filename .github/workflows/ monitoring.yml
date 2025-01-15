@@ -51,7 +51,8 @@ jobs:
         run: ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
 
       - name: Set up SSH tunnel to internal host
-        run: sshpass -p "${{ secrets.INTERNAL_HOST_PASSWORD }}" ssh -L 6443:127.0.0.1:6443 root@192.168.208.5 -f -N
+        run: sshpass -p "${{ secrets.INTERNAL_HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no -L 6443:127.0.0.1:6443 root@192.168.208.5 -f -N
+        shell: /usr/bin/bash -e {0}
 
       - name: Test SSH connection
         run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
