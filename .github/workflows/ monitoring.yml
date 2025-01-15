@@ -66,11 +66,14 @@ jobs:
           set -e
           kubectl get pods --all-namespaces -o json > pods.json
           cat pods.json
-          crashed_pods=$(jq -r '.items[] | select(.status.phase == "Failed" or .status.phase == "CrashLoopBackOff" or .status.phase == "ImagePullBackOff") | .metadata.name' pods.json)
+          crashed_pods=$(jq -r '.items[] | select(.status.phase == "Failed" or .status.phase == "CrashLoopBackOff" or .status.phase == "ImagePullBackOff" or .status.phase == "ErrImagePull") | .metadata.name' pods.json)
           echo "crashed_pods=$crashed_pods"
           crashed_pods_trimmed=$(echo "$crashed_pods" | xargs)
           echo "crashed_pods=$crashed_pods_trimmed" >> $GITHUB_OUTPUT
-          echo "crashed_pods_trimmed=$crashed_pods_trimmed"
+
+      - name: Debug crashed pods
+        run: |
+          echo "Crashed pods: ${{ steps.pod-status.outputs.crashed_pods }}"
 
       - name: Send Slack notification
         if: ${{ steps.pod-status.outputs.crashed_pods != '' }}
