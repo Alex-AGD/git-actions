@@ -1,0 +1,43 @@
+name: Monitor Kubernetes Pods
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Запуск каждые 30 минут
+
+jobs:
+  check-pods:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: '<version>'
+        id: install
+
+      - name: Get Kubeconfig
+        run: echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+
+      - name: Check pod status
+        id: pod-status
+        run: |
+          kubectl get pods --all-namespaces -o json > pods.json
+          crashed_pods=$(jq '.items[] | select(.status.phase == "Failed" or .status.phase == "CrashLoopBackOff") | .metadata.name' pods.json)
+          echo "::set-output name=crashed_pods::$crashed_pods"
+
+      - name: Send Slack notification
+        if: steps.pod-status.outputs.crashed_pods != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: repo,message
+          custom_payload: |
+            {
+              "text": "Crashed/Failed Pods detected: ${{ steps.pod-status.outputs.crashed_pods }}",
+              "username": "k8s-monitor",
+              "icon_emoji": ":warning:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
