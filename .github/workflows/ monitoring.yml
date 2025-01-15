@@ -13,8 +13,6 @@ jobs:
         uses: actions/checkout@v4
 
       - uses: azure/setup-kubectl@v4
-        with:
-          version: '<version>'
         id: install
 
       - name: Get Kubeconfig
