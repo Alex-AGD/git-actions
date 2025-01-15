@@ -26,12 +26,24 @@ jobs:
       - name: Get Kubeconfig
         run: echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
 
-      - name: Set up SSH tunnel to bastion
+      - name: Set up SSH config
         run: |
-          ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/.ssh/id_rsa
+          chmod 600 $HOME/.ssh/id_rsa
+          echo "Host ec_bastion
+                User jump_sa
+                Port 32510
+                HostName 178.124.206.53
+                Host 192.168.201.* 192.168.202.* 192.168.203.* 192.168.208.*
+                ProxyJump ec_bastion" > $HOME/.ssh/config
+          chmod 600 $HOME/.ssh/config
+
+      - name: Test SSH connection
+        run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
+        continue-on-error: true
+
+      - name: Set up SSH tunnel to bastion
+        run: ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
 
       - name: Test Kubernetes connection
         run: kubectl cluster-info
