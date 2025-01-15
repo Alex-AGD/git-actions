@@ -70,10 +70,7 @@ jobs:
           echo "crashed_pods=$crashed_pods"
           crashed_pods_trimmed=$(echo "$crashed_pods" | xargs)
           echo "crashed_pods=$crashed_pods_trimmed" >> $GITHUB_OUTPUT
-
-      - name: Debug crashed pods
-        run: |
-          echo "Crashed pods: ${{ steps.pod-status.outputs.crashed_pods }}"
+          echo "crashed_pods_trimmed=$crashed_pods_trimmed"
 
       - name: Send Slack notification
         if: ${{ steps.pod-status.outputs.crashed_pods != '' }}
