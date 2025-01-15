@@ -65,8 +65,14 @@ jobs:
         run: |
           set -e
           kubectl get pods --all-namespaces -o json > pods.json
-          crashed_pods=$(jq '.items[] | select(.status.phase == "Failed" or .status.phase == "CrashLoopBackOff") | .metadata.name' pods.json)
+          crashed_pods=$(jq -r '.items[] | select(.status.phase == "Failed" or .status.phase == "CrashLoopBackOff") | .metadata.name' pods.json)
+          echo "Found crashed pods: $crashed_pods"
           echo "crashed_pods=$crashed_pods" >> $GITHUB_OUTPUT
+
+      - name: Debug crashed pods
+        run: |
+          echo "Crashed pods: ${{ steps.pod-status.outputs.crashed_pods }}"
+          cat pods.json
 
       - name: Send Slack notification
         if: ${{ steps.pod-status.outputs.crashed_pods != '' }}
@@ -82,3 +88,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
