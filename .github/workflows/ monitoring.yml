@@ -17,8 +17,10 @@ jobs:
         uses: azure/setup-kubectl@v4
         id: kubectl
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - name: Install jq and sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq sshpass
 
       - name: Create .kube directory
         run: mkdir -p $HOME/.kube
@@ -26,50 +28,34 @@ jobs:
       - name: Get Kubeconfig
         run: echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-
       - name: Set up SSH config
         run: |
           mkdir -p $HOME/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > $HOME/.ssh/id_rsa
           chmod 600 $HOME/.ssh/id_rsa
           echo "Host ec_bastion
+                HostName 178.124.206.53
                 User jump_sa
                 Port 32510
-                HostName 178.124.206.53
-                Host 192.168.201.* 192.168.202.* 192.168.203.* 192.168.208.*
-                ProxyJump ec_bastion" > $HOME/.ssh/config
+                IdentityFile $HOME/.ssh/id_rsa
+                StrictHostKeyChecking no
+
+                Host internal-host
+                HostName 192.168.208.5
+                User root
+                ProxyJump ec_bastion
+                IdentityFile $HOME/.ssh/id_rsa
+                StrictHostKeyChecking no" > $HOME/.ssh/config
           chmod 600 $HOME/.ssh/config
-        shell: /usr/bin/bash -e {0}
 
-      - name: Test SSH connection
-        run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
-        continue-on-error: true
+      - name: Test SSH connection to bastion
+        run: ssh ec_bastion echo "Connected to bastion!"
 
-      - name: Set up SSH tunnel to bastion
-        run: ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
+      - name: Test SSH connection to internal host
+        run: ssh internal-host echo "Connected to internal host!"
 
-      - name: Set up SSH tunnel to internal host
-        run: sshpass -p "${{ secrets.INTERNAL_HOST_PASSWORD }}" ssh -o StrictHostKeyChecking=no -L 6443:127.0.0.1:6443 root@192.168.208.5 -f -N
-        shell: /usr/bin/bash -e {0}
-
-      - name: Test SSH connection
-        run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
-        continue-on-error: true
-
-      - name: Set up SSH tunnel to bastion
-        run: ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
-
-      - name: Set up SSH tunnel to internal host
-        run: ssh -L 6443:127.0.0.1:6443 root@192.168.208.5 -f -N
-
-      - name: Test SSH connection
-        run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
-        continue-on-error: true
-
-      - name: Set up SSH tunnel to bastion
-        run: ssh -o StrictHostKeyChecking=no -f -N -L 6443:127.0.0.1:6443 jump_sa@178.124.206.53 -p 32510
+      - name: Set up SSH tunnel
+        run: ssh -f -N -L 6443:127.0.0.1:6443 internal-host
 
       - name: Test Kubernetes connection
         run: kubectl cluster-info
