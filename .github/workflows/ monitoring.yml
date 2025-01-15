@@ -28,7 +28,8 @@ jobs:
 
       - name: Set up SSH config
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/.ssh/id_rsa
+          mkdir -p $HOME/.ssh
+          echo "***\n***\n***" > $HOME/.ssh/id_rsa
           chmod 600 $HOME/.ssh/id_rsa
           echo "Host ec_bastion
                 User jump_sa
@@ -37,6 +38,7 @@ jobs:
                 Host 192.168.201.* 192.168.202.* 192.168.203.* 192.168.208.*
                 ProxyJump ec_bastion" > $HOME/.ssh/config
           chmod 600 $HOME/.ssh/config
+        shell: /usr/bin/bash -e {0}
 
       - name: Test SSH connection
         run: ssh -o StrictHostKeyChecking=no -v jump_sa@178.124.206.53 -p 32510
