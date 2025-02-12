@@ -71,7 +71,7 @@ jobs:
           crashed_pods_trimmed=$(echo "$crashed_pods" | xargs)
           echo "crashed_pods=$crashed_pods_trimmed" >> $GITHUB_OUTPUT
 
-      - name: Debug crashed podsа
+      - name: Debug crashed pods
         run: |
           echo "Crashed pods: ${{ steps.pod-status.outputs.crashed_pods }}"
 
